@@ -144,7 +144,6 @@ def main():
             acc = system.login(username, password)
 
             if acc:
-                # This replaces your old welcome print
                 print(f"\nWelcome {acc.role()}: {acc.get_username()}!")
                 
                 if acc.role() == "Admin":
@@ -156,7 +155,6 @@ def main():
                         adm_choice = input("Select: ")
                         
                         if adm_choice == "1":
-                            # This is where you'll call shop.add_product later
                             print("Redirecting to Add Product logic...")
                         elif adm_choice == "3":
                             break
