@@ -144,8 +144,36 @@ def main():
             acc = system.login(username, password)
 
             if acc:
-                print(f"Welcome {role} {acc.get_username()}!")
-
+                # This replaces your old welcome print
+                print(f"\nWelcome {acc.role()}: {acc.get_username()}!")
+                
+                if acc.role() == "Admin":
+                    while True:
+                        print("\n--- ADMIN MENU ---")
+                        print("1. Add Product")
+                        print("2. Update Stock")
+                        print("3. Logout")
+                        adm_choice = input("Select: ")
+                        
+                        if adm_choice == "1":
+                            # This is where you'll call shop.add_product later
+                            print("Redirecting to Add Product logic...")
+                        elif adm_choice == "3":
+                            break
+                            
+                elif acc.role() == "User":
+                    while True:
+                        print("\n--- USER MENU ---")
+                        print("1. View Catalog (Shopping)")
+                        print("2. Make Reservation")
+                        print("3. Logout")
+                        usr_choice = input("Select: ")
+                        
+                        if usr_choice == "1":
+                            print("Displaying Catalog...")
+                        elif usr_choice == "3":
+                            break
+                            
             else:
                 print("Invalid Login.")
 
