@@ -67,14 +67,12 @@ class ThePetShop:
             json.dump(inv_data, f, indent=2)
 
     def add_product(self, name, breed, info, qty, srp, img):
-        # Create a new PetItem object and append to catalog
         new_item = PetItem(name, breed, info, qty, srp, img)
         self.catalog.append(new_item)
         self.sync_files() # Save changes immediately
         print(f"Product {name} added successfully.")
 
     def update_product_stock(self, name, new_qty):
-        # Search for the product by name and update its quantity
         for item in self.catalog:
             if item.name.lower() == name.lower():
                 item.qty = int(new_qty)
