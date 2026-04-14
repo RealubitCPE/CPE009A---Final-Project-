@@ -81,4 +81,13 @@ class ThePetShop:
                 return True
         print("Product not found.")
         return False
+
+    def show_catalog(self):
+        
+        if not self.catalog:
+            print('No products available.')
+            return
+
+        for item in self.catalog
+            print("Name:{item.name}, Breed:{item.breed}, Info:{item.info}, qty:{item.qty}, srp: {item.srp}, image: {item.img}')
        
