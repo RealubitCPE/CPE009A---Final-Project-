@@ -1,0 +1,375 @@
+# ================= ACCOUNT SYSTEM =================
+
+# Import JSON for saving/loading data
+import json
+# Import hashlib for password hashing
+import hashlib
+# Import abstract base class tools
+from abc import ABC, abstractmethod 
+
+# Function to hash passwords using SHA256
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Abstract base class for accounts
+class account(ABC):
+    def __init__(self, username, password):
+        self._username = username  # protected username
+        self.__password = hash_password(password)  # private hashed password
+
+    # Check if entered password matches stored hash
+    def check_password(self, password):
+        return self.__password == hash_password(password)
+
+    # Get username
+    def get_username(self):
+        return self._username
+    
+    # Get hashed password
+    def get_password(self):
+        return self.__password
+
+    # Abstract method for role
+    @abstractmethod
+    def role(self):
+        pass
+
+# Admin class inherits account
+class Admin(account):
+    def role(self):
+        return "Admin"
+
+# User class inherits account
+class User(account):
+    def role(self):
+        return "User"
+
+# Main system for managing accounts
+class System:
+    def __init__(self):
+        self.__accounts = []  # store accounts
+
+    # Sign up new account
+    def signup(self, username, password, role):
+        # Check duplicate username
+        for acc in self.__accounts:
+            if acc.get_username() == username:
+                return "Username already exists."
+        
+        # Create account based on role
+        if role.lower() == "admin":
+            account_obj = Admin(username, password)
+        else:
+            account_obj = User(username, password)
+
+        self.__accounts.append(account_obj)
+        return f"{role} account created successfully."
+    
+    # Login function
+    def login(self, username, password):
+        for acc in self.__accounts:
+            if acc.get_username() == username and acc.check_password(password):
+                return acc
+        return None
+    
+    # Save accounts to JSON file
+    def save_accounts(self):
+        data = []
+        for acc in self.__accounts:
+            data.append({
+                "username": acc.get_username(),
+                "password": acc.get_password(),
+                "role": acc.role()
+            })
+
+        with open("accounts.json", "w") as f:
+            json.dump(data,f)
+
+    # Load accounts from JSON file
+    def load_accounts(self):
+        try:
+            with open("accounts.json", "r") as f:
+                data =json.load(f)
+
+            for item in data:
+                # Recreate account objects
+                if item["role"] == "Admin":
+                    acc = Admin(item["username"],"temp")
+                else:
+                    acc = User(item["username"],"temp")
+
+                # Restore hashed password directly
+                acc._account__password = item["password"]
+                self.__accounts.append(acc)
+        
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+
+    # Delete account by username
+    def delete_account(self,username):
+        try:
+            with open("accounts.json", "r") as f:
+                data = json.load(f)
+        
+            new_data = []
+            for acc in data:
+                if acc["username"] != username:
+                    new_data.append(acc)
+
+            # Save updated list
+            with open("accounts.json", "w") as f:
+               json.dump(new_data,f)
+
+            return "Account Deleted."
+        
+        except FileNotFoundError:
+            return "No account found."
+
+
+# ================= PET SHOP =================
+
+# Import OS for file checking
+import os
+
+# Class representing each pet/product
+class PetItem:
+    def __init__(self, name, breed, info, qty, srp, img):
+        self.name = name        # product name
+        self.breed = breed      # breed/type
+        self.info = info        # description
+        self.qty = int(qty)     # quantity in stock
+        self.srp = float(srp)   # price
+        self.img = img          # image reference
+
+
+# Admin-type user for pet shop
+class Manager:
+    def __init__(self, handle, key):
+        self.handle = handle
+        self.key = key
+
+    # Check password
+    def check_auth(self, password):
+        return self.key == password
+
+    # Return role
+    def get_access(self):
+        return "Admin"
+
+
+# Regular user for pet shop
+class Guest:
+    def __init__(self, handle, key):
+        self.handle = handle
+        self.key = key
+
+    def check_auth(self, password):
+        return self.key == password
+
+    def get_access(self):
+        return "User"
+
+
+# Main pet shop system
+class ThePetShop:
+    def __init__(self):
+        self.users = []            # list of users
+        self.catalog = []          # list of products
+        self.reservations = []     # store reservations
+        self.load_all()            # load data from files
+
+    # Load users and inventory
+    def load_all(self):
+
+        # Load users
+        if os.path.exists("the_pet_shop_users.json"):
+            with open("the_pet_shop_users.json", "r", encoding="utf-8") as f:
+                for u in json.load(f):
+                    maximum = Manager(u['id'], u['level']) if u['lvl'] == "Admin" else Guest(u['id'], u['level'])
+                    self.users.append(maximum)
+
+        # Load inventory
+        if os.path.exists("the_pet_shop_inv.json"):
+            with open("the_pet_shop_inv.json", "r", encoding="utf-8") as f:
+                for idx in json.load(f):
+                    self.catalog.append(PetItem(idx['length'], idx['b'], idx['f'], idx['q'], idx['s'], idx['p']))
+
+    # Save users and inventory
+    def sync_files(self):
+
+        u_data = [{"id": value.handle, "level": value.key, "lvl": value.get_access()} for value in self.users]
+        with open("the_pet_shop_users.json", "w", encoding="utf-8") as f:
+            json.dump(u_data, f, indent=2)
+
+        inv_data = [{"length": p.name, "b": p.breed, "f": p.info, "q": p.qty, "s": p.srp, "p": p.img} for p in self.catalog]
+        with open("the_pet_shop_inv.json", "w", encoding="utf-8") as f:
+            json.dump(inv_data, f, indent=2)
+
+    # Add new product
+    def add_product(self, name, breed, info, qty, srp, img):
+        new_item = PetItem(name, breed, info, qty, srp, img)
+        self.catalog.append(new_item)
+        self.sync_files()
+        print(f"Product {name} added successfully.")
+
+    # Update stock quantity
+    def update_product_stock(self, name, new_qty):
+        for item in self.catalog:
+            if item.name.lower() == name.lower():
+                item.qty = int(new_qty)
+                self.sync_files()
+                print(f"Stock for {name} updated to {new_qty}.")
+                return True
+        print("Product not found.")
+        return False
+
+    # Display all products
+    def show_catalog(self):
+        
+        if not self.catalog:
+            print('No products available.')
+            return
+
+        for item in self.catalog:
+            print(f"Name:{item.name}, Breed:{item.breed}, Info:{item.info}, qty:{item.qty}, srp:{item.srp}, image:{item.img}")
+
+    # Count total inventory items
+    def total_products(self):
+        total = 0
+        for item in self.catalog:
+            total += item.qty
+        print(f"Total items in inventory: {total}")
+        return total
+
+    # Reserve product (reduces stock)
+    def reserve_product(self, username, product_name, quantity):
+        for item in self.catalog:
+            if item.name.lower() == product_name.lower():
+                
+                if item.qty >= quantity:
+                    item.qty -= quantity
+
+                    # Save reservation info
+                    reservation = {
+                        "user": username,
+                        "product": product_name,
+                        "qty": quantity
+                    }
+
+                    self.reservations.append(reservation)
+                    self.sync_files()
+
+                    print(f"{quantity} {product_name} reserved by {username}.")
+                    return True
+                else:
+                    print("Not enough stock.")
+                    return False
+
+        print("Product not found.")
+        return False
+
+    # Show all reservations
+    def view_reservations(self):
+        if not self.reservations:
+            print("No reservations yet.")
+            return
+
+        for r in self.reservations:
+            print(f"User: {r['user']} reserved {r['qty']} of {r['product']}")
+
+
+# ================= MAIN PROGRAM =================
+def main():
+    system = System()
+    system.load_accounts()
+
+    petshop = ThePetShop()
+
+    while True:
+        print("\n=== MENU ===")
+        print("1. sign up")
+        print("2. login")
+        print("3. Exit")
+
+        choice = input("Choose: ")
+
+        if choice == "1":
+            username = input("Enter Username: ")
+            password = input("Enter Password: ")
+            role = input("Role (admin/user): ")
+
+            print(system.signup(username, password, role))
+            system.save_accounts()
+
+        elif choice == "2":
+            username = input("Enter Username: ")
+            password = input("Enter Password: ")
+
+            acc = system.login(username, password)
+
+            if acc:
+                print(f"\nWelcome {acc.role()}: {acc.get_username()}!")
+                
+                if acc.role() == "Admin":
+                    while True:
+                        print("\n--- ADMIN MENU ---")
+                        print("1. Add Product")
+                        print("2. Update Stock")
+                        print("3. View Total Products")
+                        print("4. Logout")
+                        adm_choice = input("Select: ")
+                        
+                        if adm_choice == "1":
+                            name = input("Name: ")
+                            breed = input("Breed: ")
+                            info = input("Info: ")
+                            qty = input("Quantity: ")
+                            srp = input("Price: ")
+                            img = input("Image: ")
+                            petshop.add_product(name, breed, info, qty, srp, img)
+
+                        elif adm_choice == "2":
+                            name = input("Product name: ")
+                            qty = input("New quantity: ")
+                            petshop.update_product_stock(name, qty)
+
+                        elif adm_choice == "3":
+                            petshop.total_products()
+
+                        elif adm_choice == "4":
+                            break
+                            
+                elif acc.role() == "User":
+                    while True:
+                        print("\n--- USER MENU ---")
+                        print("1. View Catalog")
+                        print("2. Make Reservation")
+                        print("3. Logout")
+                        usr_choice = input("Select: ")
+                        
+                        if usr_choice == "1":
+                            petshop.show_catalog()
+
+                        elif usr_choice == "2":
+                            product = input("Enter product name: ")
+                            qty = int(input("Enter quantity: "))
+                            petshop.reserve_product(acc.get_username(), product, qty)
+
+                        elif usr_choice == "3":
+                            break
+                            
+            else:
+                print("Invalid Login.")
+
+        elif choice == "3":
+            system.save_accounts()
+            print("Thank you for shopping.")
+            break
+
+        else:
+            print("Invalid Choice.")
+
+
+# Run program
+if __name__ == "__main__":
+    main()
