@@ -1,3 +1,4 @@
+# ================= MODULES =================
 import tkinter as tk
 from tkinter import messagebox
 import json
@@ -9,7 +10,7 @@ users_file = "users.json"
 products_file = "products.json"
 orders_file = "reservations.json"
 
-# ================= UTIL =================
+# ================= Security  =================
 def encrypt_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -72,7 +73,7 @@ def load_data():
         }
         save_users()
 
-# ================= AUTH =================
+# ================= AUTHENTICATION =================
 def register(username, password):
     if username in users:
         return False
@@ -134,7 +135,7 @@ def remove_item(name):
             return True
     return False
 
-# ================= UI =================
+# ================= GUI Setup =================
 root = tk.Tk()
 root.title("🐾 PET SHOP SYSTEM")
 root.geometry("550x700")
@@ -280,5 +281,6 @@ reserve_input.pack()
 tk.Button(user_frame, text="Reserve", command=reserve_ui).pack()
 tk.Button(user_frame, text="Logout", command=logout).pack()
 
+# ================= MAIN =================
 load_data()
 root.mainloop()
